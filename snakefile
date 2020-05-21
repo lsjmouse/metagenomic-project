@@ -45,10 +45,23 @@ rule mv_pear_output:
         discarded_fastq = "Analysis/2.Pear/{sample}.pear.fastq.gz.discarded.fastq"
     shell:
         """
-        mv {input.assembled_fastq} Analysis/2.Pear/assembled_fastq
-        mv {input.unassembled_r1} Analysis/2.Pear/unassembled_fastq
-        mv {input.unassembled_r2} Analysis/2.Pear/unassembled_fastq
+        mv {input.assembled_fastq} Analysis/2.Pear/assembled_fastq;
+        mv {input.unassembled_r1} Analysis/2.Pear/unassembled_fastq;
+        mv {input.unassembled_r2} Analysis/2.Pear/unassembled_fastq;
         mv {input.discarded_fastq} Analysis/2.Pear/discarded_fastq
+        """
+
+rule count_pear_percent:
+    input:
+        assembled_fastq = "Analysis/2.Pear/assembled_fastq/{sample}.pear.fastq.gz.assembled.fastq"
+        unassembled_r1 = "Analysis/2.Pear/unassembled_fastq/{sample}.pear.fastq.gz.unassembled.forward.fastq"
+        discarded_fastq = "Analysis/2.Pear/discarded_fastq/{sample}.pear.fastq.gz.discarded.fastq"
+    output:
+        count_report = "Analysis/2.Pear/count_report"
+    shell:
+        """
+        a=$(< "{input.assembled_fastq}" wc -l); b=$(< "{input.unassembled_r1}" wc -l); c=$(< "{input.discarded_fastq}" wc -l); d=$(($a + $b + $c)); e=$(bc<<<"scale=2; $a/$d"); f=$(bc<<<"scale=2; $b/$d");
+        echo ${sample} assembled percent = $e ',' unassembled percent = $f >> {output.count_report}
         """
 
 rule mkdir_for_fasta:
@@ -123,8 +136,51 @@ rule run_tblastx_for_unassembled_fasta:
     input:
         combiend_sequence = "Analysis/2.Pear/bridging_sequence/{sample}.pear.fastq.gz.unassembled.combine.fasta"
     output:
-        unassembled_tblastx_result = "Analysis/3.tblastx/assembled_sequence_results/{sample}.pear.fastq.gz.unassembled.combine.fasta.tblastx"
+        unassembled_tblastx_result = "Analysis/3.tblastx/unassembled_sequence_results/{sample}.pear.fastq.gz.unassembled.combine.fasta.tblastx"
     shell:
         """
         tblastx -query {input.combiend_sequence} -out {output.unassembled_tblastx_result} -db Data/database/CH4_database -outfmt 6 -evalue 1e-5
+        """
+
+rule mkdir_for_filtered_sequence:
+    shell:
+        """
+        mkdir Analysis/4.assembly/filtered_id_list Analysis/4.assembly/filtered_fastq
+        """
+
+rule get_hitted_sequence_id_list:
+    input:
+        assembled_tblastx_result = "Analysis/3.tblastx/assembled_sequence_results/{sample}.pear.fastq.gz.assembled.fasta.tblastx"
+        unassembled_tblastx_result = "Analysis/3.tblastx/unassembled_sequence_results/{sample}.pear.fastq.gz.unassembled.combine.fasta.tblastx"
+    output:
+        id_list = "Analysis/4.assembly/filtered_id_list/{sample}.filtered.list"
+    shell:
+        """
+        cat {input.assembled_tblastx_result}|cut -f 1|uniq >>{output.id_list};
+        cat {input.unassembled_tblastx_result}|cut -f 1|uniq >>{output.id_list}
+        """
+
+rule get_hitted_sequence_fastq:
+    input:
+        id_list = "Analysis/4.assembly/filtered_id_list/{sample}.filtered.list"
+        r1 = "Data/Sequences_fastq.gz/{sample}_R1_001.fastq.gz"
+        r2 = "Data/Sequences_fastq.gz/{sample}_R2_001.fastq.gz"
+    output:
+        hitted_forward_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R1_001.filtered.fastq"
+        hitted_reverse_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R2_001.filtered.fastq"
+    shell:
+        """
+        seqtk subseq {input.r1} {input.id_list} >{output.hitted_forward_fastq};
+        seqtk subseq {input.r2} {input.id_list} >{output.hitted_reverse_fastq}
+        """
+
+rule metaspade:
+    input:
+        hitted_forward_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R1_001.filtered.fastq"
+        hitted_reverse_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R2_001.filtered.fastq"
+    output:
+        "Analysis/4.assembly/filtered_assembly/{sample}"
+    shell:
+        """
+        metaspade.py -1 {input.hitted_forward_fastq} -2 {input.hitted_reverse_fastq} -o {output}
         """
