@@ -8,6 +8,7 @@
 # run Fastqc for each files and use multiqc to generate them into one html file
 # version: FastQC/0.11.8  MultiQC/1.8
 for i in *fastq.gz; do fastqc $i -t 6 -o ../../Analysis/FastQC/ ;done
+
 cd /proj/snic2019-30-58/Songjun/Analysis/FastQC
 multiqc .
 
