@@ -10,6 +10,7 @@
 for i in *fastq.gz; do fastqc $i -t 6 -o ../../Analysis/FastQC/ ;done
 
 cd /proj/snic2019-30-58/Songjun/Analysis/FastQC
+
 multiqc .
 
 # step2 Pear
@@ -20,16 +21,20 @@ for f in *R1_001.fastq.gz; do "file is $f"; p=${f%_*_*}; pear -f ${p}_R1_001.fas
 
 # step3 organize output files from Pear
 cd Pear
-mkdir assembled_fastq
-mkdir unassembled_fastq
-mkdir discarded_fastq
+
+mkdir assembled_fastq/ unassembled_fastq/ discarded_fastq/
+
 mv *.assembled.fastq assembled_fastq/
+
 mv *.unassembled.forward.fastq unassembled_fastq/
+
 mv *.unassembled.reverse.fastq unassembled_fastq/
+
 mv *.discarded.fastq discarded_fastq
 
 # step4 count assembled percentage and generate a report
 cd assembled_fastq
+
 for i in *assembled.fastq; do  p=${i%.assembled.fastq};
 a=$(< "$i" wc -l); b=$(< "../unassembled_fastq/${p}.unassembled.forward.fastq" wc -l); 
 c=$(< "../discarded_fastq/${p}.discarded.fastq" wc -l); d=$(($a + $b + $c)); e=$(bc<<<"scale=2; $a/$d"); f=$(bc<<<"scale=2; $b/$d") ;
@@ -40,6 +45,7 @@ echo $p assembled percent = $e ',' unassembled percent = $f >> count_report;  do
 # make the assembled sequence prepared for tblastx
 # version: seqtk/1.2-r101
 cd assembled_fastq
+
 for i in *fastq; do seqtk seq -A $i > ${i}.fasta
 
 
@@ -47,7 +53,9 @@ for i in *fastq; do seqtk seq -A $i > ${i}.fasta
 # use my customized python script to bridging unassembled forward and reverse sequences, with 50N between them.
 # since these bridging sequences are used for blastx, so the output file is fasta file.
 cd unassembled_fastq
+
 for f in *forward.fastq; do p=${f%.forward.fastq}; ./pear_add_n.py ${p}.forward.fastq ${p}.reverse.fastq ${p}.combine.fasta ;done
+
 mv *.combine.fasta briding_sequence/
 
 # step7 makeblastdb
@@ -61,18 +69,26 @@ makeblastdb -in CH4_database.fasta -input_type fasta -dbtype nuca -out Data/data
 # the evalue here is setted as 1e-5 for this project
 # version blast/2.9.0+
 cd assembled_fastq
+
 for i in *.fasta; do tblastx -query $i -out Analysis/tblastx/assembled_sequence_results/${i}.tblastx -db Data/database/CH4_database -outfmt 6 -evalue 1e-5
+
 cd bridging_sequence
+
 for i in *.fasta; do tblastx -query $i -out Analysis/tblastx/unassembled_sequence_results/${i}.tblastx -db Data/database/CH4_database -outfmt 6 -evalue 1e-5
 
 # step9 get hit sequences for tblastx results
 # pick up the sequences id that have hit in tblastx, and use these ids to find their original fastq sequence
 # the sequences get from this step are the filtered sequences by tblastx, which can be used for downstream analysis
 cd unassembled_sequence_results
+
 for i in *.tblastx; do p=${i%.pear.fastq.gz.unassembled.combine.fasta.tblastx}; cat $i|cut -f 1|uniq >>../filter_list/${p}.filtered.list;done
+
 cd assembled_sequence_results
+
 for i in *.tblastx; do p=${i%.pear.fastq.gz.assembled.fastq.fasta.tblastx}; cat $i|cut -f 1| uniq >> ../filter_list/${p}.filtered.list; done
+
 cd filter_list
+
 for i in *.list; do p=${i%.filtered.list}; seqtk subseq ../../Data/Sequences_fastq.gz/${p}_R1_001.fastq.gz $i >../filtered_fastq/${p}_R1_001.filtered.fastq;
 seqtk subseq ../../Data/Sequences_fastq.gz/${p}_R2_001.fastq.gz $i >../filtered_fastq/${p}_R2_001.filtered.fastq; done 
 
@@ -81,4 +97,5 @@ seqtk subseq ../../Data/Sequences_fastq.gz/${p}_R2_001.fastq.gz $i >../filtered_
 # use metaspades to make assembly for these filtered fastq
 # version: SPAdes v3.9.1 [metaSPAdes mode]
 cd filtered_fastq
+
 for i in *R1_001.filtered.fastq; do p=${i%_R1_001.filtered.fastq}; metaspades.py -1 ${p}_R1_001.filtered.fastq -2 ${p}_R2_001.filtered.fastq -o ../filtered_assembly/$p; done
