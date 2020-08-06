@@ -42,8 +42,8 @@ with open(sys.argv[1]) as fin,open(sys.argv[2],'w') as fout:
         line = line.rstrip()
         if line[0] == '>':
             if memoery=='':
-                #id = line.split(' ')[0][1:]
-                id = line.split('\t')[0][1:]
+                id = line.split(' ')[0][1:]
+                #id = line.split('\t')[0][1:]
                 ids.append(id)
             else:
                 sequences.append(memoery)
