@@ -80,7 +80,8 @@ rule translate_assembled_fastq_to_fasta:
         seqtk seq -A {input.assembled_fastq} > {output.assembled_fasta}
         """
 
-# also how to get this CH4_fasta, maybe ask joel about the R script
+# the CH4_fasta is dowanloaded from KEGG website and created by customized R script
+
 rule make_blast_database:
     input:
         CH4_fasta = "Data/database/CH4_database.fasta"
@@ -183,4 +184,58 @@ rule metaspade:
     shell:
         """
         metaspade.py -1 {input.hitted_forward_fastq} -2 {input.hitted_reverse_fastq} -o {output}
+        """
+
+rule mkdir_for_mapping:
+    shell:
+        """
+        mkdir Analysis/5.mapping
+        """
+
+#use software:bwa for mapping, need to get it prepared in the directory
+
+rule mapping:
+    input:
+        scaffolds = "Analysis/4.assembly/filtered_assembly/{sample}/scaffolds.fasta"
+        hitted_forward_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R1_001.filtered.fastq"
+        hitted_reverse_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R2_001.filtered.fastq"
+    output:
+        "Analysis/5.mapping/{sample}.sam"
+    shell:
+        """
+        ./bwa index {input.scaffolds};
+        ./bwa mem {input.scaffolds} {input.hitted_forward_fastq} {input.hitted_reverse_fastq} >{output}
+        """
+
+rule mkdir_for_annotation:
+    shell:
+        """
+        mkdir Analysis/6.annotation/pear_result Analysis/6.annotation/filtered_fasta
+        """
+
+rule get_hitted_sequence_fasta:
+    input:
+        hitted_forward_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R1_001.filtered.fastq"
+        hitted_reverse_fastq = "Analysis/4.assembly/filtered_fastq/{sample}_R2_001.filtered.fastq"
+    output:
+        "Analysis/6.annotation/filtered_fasta/{sample}.filtered.fasta"
+    shell:
+        """
+        pear -f {input.hitted_forward_fastq} -r {input.hitted_reverse_fastq} -o Analysis/6.annotation/pear_result;
+        seqtk seq -A Analysis/6.annotation/pear_result/{sample}.assembled.fastq >> {output};
+        ./Script/pear_add_n.py Analysis/6.annotation/pear_result/{sample}.unassembled.forward.fastq Analysis/6.annotation/pear_result/{sample}.unassembled.reverse.fastq Analysis/6.annotation/pear_result/{sample}.unassembled.combined.fasta;
+        cat Analysis/6.annotation/pear_result/{sample}.unassembled.combined.fasta >> {output}
+        """
+#now we get filtered fasta files for annotation
+#for MG-RAST, these filtered fasta files can be submitted directly, just need to prepare a metadata file manually
+#for GhostKOALA, these filtered fasta files need to be translated into amino acid sequence(faa file)
+
+rule get_amino_acid_sequence:
+    input:
+        "Analysis/6.annotation/filtered_fasta/{sample}.filtered.fasta"
+    output:
+        "Analysis/6.annotation/filtered_fasta/{sample}.filtered.fasta.faa"
+    shell:
+        """
+        ./Script/translate.py {input} {output}
         """
