@@ -48,7 +48,8 @@ with open(sys.argv[1]) as fin,open(sys.argv[2],'w') as fout:
             else:
                 sequences.append(memoery)
                 memoery=''
-                id = line.split('\t')[0][1:]
+                id = line.split(' ')[0][1:]
+                #id = line.split('\t')[0][1:]
                 ids.append(id)
         else:
             memoery += line
