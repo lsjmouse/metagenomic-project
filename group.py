@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 #! /Users/user/anaconda3/bin/python3
 #! /usr/bin/python3
+
+#usage: ./group.py metadata.txt output.csv
+
 import pandas as pd
 import sys
 from collections import Counter
@@ -36,4 +39,4 @@ for i in range(1,len(list_index)):
     combine = pd.merge(combine,df, how="outer",on=['KO_ID'])
     combine = combine.fillna(0)
 
-combine.to_csv("combine.csv")
+combine.to_csv(sys.argv[2])
