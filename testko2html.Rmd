@@ -1,0 +1,42 @@
+---
+title: "testko2html"
+author: "Dag Ahren, NBIS"
+date: "11/14/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## KEGG extraction of sequences involved in methane metabolism
+
+```{r prep}
+source("https://bioconductor.org/biocLite.R")
+biocLite("KEGGREST")
+library(KEGGREST)
+
+
+```
+
+# KO2html
+```{r}
+# Load list from file
+#for loop Change outputfile so that it uses the loop variable. 1 KO = 1 Fasta file 
+# Needs a list of KO ids that corresponds to the reactions for which genes should be retrieved. E.g. K14082
+g<-as.data.frame(keggLink("K16157"))
+
+#Retrieves nt genes in fasta format and prints to file
+#html2text program required
+for(gID in g$V2){
+keggquery<-paste("http://www.genome.jp/dbget-bin/www_bget?-f+-n+n+",gID, sep = "")
+print(keggquery)
+
+#system(paste("html2text -width 1000 -nobs " , keggquery , "  |grep -E -v 'BLAST|GenomeNet|=|^$' |grep -v 'No such' |grep -v 'PMID:' " , ">>", "methane_specific_genes_test.fasta"))
+
+system(paste("html2text -width 1000 -nobs " , keggquery , "  |grep -E -v 'BLAST|GenomeNet|=|^$' |grep -v 'No such' " , ">>", "methane_specific_genes_test.fasta"))
+
+}
+end of loop
+
+```
