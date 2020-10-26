@@ -14,8 +14,9 @@ for i in range(len(list_index)):
     name = list_index[i]
     name = name + ".txt"
     name_list = df[list_index[i]].tolist()
+    name_cleaned_list = [x for x in name_list if str(x) != 'nan']
     KOlist=[]
-    for j in name_list:
+    for j in name_cleaned_list:
         with open(j,"r") as fin:
             for line in fin:
                 line=line.rstrip()
