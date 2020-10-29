@@ -269,7 +269,6 @@ rule combine_hitted_fasta:
         seqtk seq -A {input.assembled} >> {output.fasta}
         """
 
-
 #now we get filtered fasta files for annotation
 #for MG-RAST, these filtered fasta files can be submitted directly, just need to prepare a metadata file manually
 #for GhostKOALA, these filtered fasta files need to be translated into amino acid sequence(faa file)
