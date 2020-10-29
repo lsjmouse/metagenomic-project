@@ -1,7 +1,14 @@
 #! /usr/bin/env python
 #! /Users/user/anaconda3/bin/python3
 #! /usr/bin/python3
-import sys
+
+import argparse
+usage = 'This programme translates nucletide sequences into amino acid sequences in all six frames, number:1-6 represent +1,+2,+3,-1,-2,-3'
+parser = argparse.ArgumentParser(description = usage)
+parser.add_argument('-i', dest='infile',metavar='INFILE',type=argparse.FileType('r'),required=True, help ='Input nucletide fasta file')
+parser.add_argument('-o',dest='outfile',metavar ='OUTFILE ',type = argparse.FileType('w') ,required=True, help = 'Output amino acid faa file')
+args = parser.parse_args()
+
 def reverse(sequence):
     sequence=sequence.upper()
     old_chars='ACGT'
@@ -37,34 +44,35 @@ def translate(sequence, position):
     return protein_seq
 ids, sequences = [], []
 memoery=''
-with open(sys.argv[1]) as fin,open(sys.argv[2],'w') as fout:
-    for line in fin:
-        line = line.rstrip()
-        if line[0] == '>':
-            if memoery=='':
-                id = line.split(' ')[0][1:]
-                #id = line.split('\t')[0][1:]
-                ids.append(id)
-            else:
-                sequences.append(memoery)
-                memoery=''
-                id = line.split(' ')[0][1:]
-                #id = line.split('\t')[0][1:]
-                ids.append(id)
+
+
+for line in args.infile:
+    line = line.rstrip()
+    if line[0] == '>':
+        if memoery=='':
+            id = line.split(' ')[0][1:]
+            #id = line.split('\t')[0][1:]
+            ids.append(id)
         else:
-            memoery += line
-    sequences.append(line)
-    dict_protein=dict(zip(ids,sequences))
-    for key, value in dict_protein.items():
-        rna = transcribe(value)
-        protein_1 = translate(rna,0)
-        protein_2 = translate(rna,1)
-        protein_3 = translate(rna,2)
-        reverse_dna=reverse(value)
-        reverse_rna=transcribe(reverse_dna)
-        reverse_protein_1=translate(reverse_rna,0)
-        reverse_protein_2=translate(reverse_rna,1)
-        reverse_protein_3=translate(reverse_rna,2)
-        print('>{}:1\n{}\n>{}:2\n{}\n>{}:3\n{}\n>{}:4\n{}\n>{}:5\n{}\n>{}:6\n{}'.format(
-        key,protein_1,key,protein_2,key,protein_3,key,reverse_protein_1,key,reverse_protein_2,
-        key,reverse_protein_3), file=fout)
+            sequences.append(memoery)
+            memoery=''
+            id = line.split(' ')[0][1:]
+            #id = line.split('\t')[0][1:]
+            ids.append(id)
+    else:
+        memoery += line
+sequences.append(line)
+dict_protein=dict(zip(ids,sequences))
+for key, value in dict_protein.items():
+    rna = transcribe(value)
+    protein_1 = translate(rna,0)
+    protein_2 = translate(rna,1)
+    protein_3 = translate(rna,2)
+    reverse_dna=reverse(value)
+    reverse_rna=transcribe(reverse_dna)
+    reverse_protein_1=translate(reverse_rna,0)
+    reverse_protein_2=translate(reverse_rna,1)
+    reverse_protein_3=translate(reverse_rna,2)
+    print('>{}:1\n{}\n>{}:2\n{}\n>{}:3\n{}\n>{}:4\n{}\n>{}:5\n{}\n>{}:6\n{}'.format(
+    key,protein_1,key,protein_2,key,protein_3,key,reverse_protein_1,key,reverse_protein_2,
+    key,reverse_protein_3), file=args.outfile)
