@@ -81,19 +81,6 @@ rule move_files:
         mv {input.discarded_fastq} {output.discarded_fastq_mv}
         """
 
-rule count_pear_percent:
-    input:
-        assembled_fastq = "Analysis/2.Pear/assembled_fastq/{sample}.pear.fastq.gz.assembled.fastq",
-        unassembled_r1 = "Analysis/2.Pear/unassembled_fastq/{sample}.pear.fastq.gz.unassembled.forward.fastq",
-        discarded_fastq = "Analysis/2.Pear/discarded_fastq/{sample}.pear.fastq.gz.discarded.fastq"
-    output:
-        count_report = "Analysis/2.Pear/count_report.txt"
-    shell:
-        """
-        a=$(< "{input.assembled_fastq}" wc -l); b=$(< "{input.unassembled_r1}" wc -l); c=$(< "{input.discarded_fastq}" wc -l); d=$(($a + $b + $c)); e=$(bc<<<"scale=2; $a/$d"); f=$(bc<<<"scale=2; $b/$d");
-        echo ${sample} assembled percent = $e ',' unassembled percent = $f >> {output.count_report}
-        """
-
 rule mkdir_for_fasta:
     shell:
         """
@@ -150,7 +137,7 @@ rule add_50_N_to_unassembled_sequence:
         combiend_sequence = "Analysis/2.Pear/bridging_sequence/{sample}.pear.fastq.gz.unassembled.combine.fasta"
     shell:
         """
-        ./Scripts/pear_add_n.py {input.unassembled_r1} {input.unassembled_r2} {output.combiend_sequence}
+        ./Scripts/pear_add_n.py -f {input.unassembled_r1} -r {input.unassembled_r2} -o {output.combiend_sequence}
         """
 
 rule mkdir_for_unaseembled_tblastx_result:
@@ -280,5 +267,5 @@ rule get_amino_acid_sequence:
         "Analysis/6.annotation/filtered_fasta/{sample}.filtered.fasta.faa"
     shell:
         """
-        ./Scripts/translate.py {input} {output}
+        ./Scripts/translate.py -i {input} -o {output}
         """
