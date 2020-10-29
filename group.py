@@ -5,10 +5,15 @@
 #usage: ./group.py metadata.txt output.csv
 
 import pandas as pd
-import sys
 from collections import Counter
+import argparse
+usage = 'This programme combines all annotation result txt files into a csv table, and this programme needs to be the same directory of all txt files .A metadata txt is required for grouping principle.'
+parser = argparse.ArgumentParser(description = usage)
+parser.add_argument('-m', dest='metadata',metavar='METADATA',type=argparse.FileType('r'),required=True, help ='Metadata file for grouping principle')
+parser.add_argument('-o',dest='outfile',metavar ='OUTFILE ',type = argparse.FileType('w') ,required=True, help = 'Output csv file')
+args = parser.parse_args()
 
-df = pd.read_csv(sys.argv[1],sep="\t")
+df = pd.read_csv(args.metadata,sep="\t")
 list_index=df.columns.tolist()
 for i in range(len(list_index)):
     name = list_index[i]
@@ -40,4 +45,4 @@ for i in range(1,len(list_index)):
     combine = pd.merge(combine,df, how="outer",on=['KO_ID'])
     combine = combine.fillna(0)
 
-combine.to_csv(sys.argv[2])
+combine.to_csv(args.outfile)
