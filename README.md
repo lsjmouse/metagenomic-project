@@ -18,7 +18,7 @@ A metadata file is also necessary for the python script. It is used for grouping
 usage: 
 
 ```
-./group.py metadata.txt output.csv
+./group.py -m metadata.txt -o output.csv
 ```
 
 
