@@ -252,7 +252,7 @@ rule combine_hitted_fasta:
         fasta = "Analysis/6.annotation/filtered_fasta/{sample}.filtered.fasta"
     shell:
         """
-        ./Scripts/pear_add_n.py {input.unassembled_r1} {input.unassembled_r2} {output.fasta};
+        ./Scripts/pear_add_n.py -f {input.unassembled_r1} -r {input.unassembled_r2} -o {output.fasta};
         seqtk seq -A {input.assembled} >> {output.fasta}
         """
 
